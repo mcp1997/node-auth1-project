@@ -2,6 +2,8 @@ const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
 const session = require('express-session')
+const Store = require('connect-session-knex')(session)
+const knex = require('../data/db-config')
 
 const authRouter = require('./auth/auth-router')
 const userRouter = require('./users/users-router')
@@ -29,22 +31,30 @@ const logger = (req, res, next) => {
 const sessionConfig = {
   name: 'chocolatechip',
   secret: 'no one can know', // should be set with an environment variable
-  cookie: {
-    maxAge: 1000 * 600, // after x milliseconds, cookie expires
-    secure: false, // true in production
-    httpOnly: true
-  },
   resave: false, // if session hasn't been changed, create new session?
   saveUninitialized: false, // by law, do not set cookies automatically
+  store: new Store({
+    knex,
+    createTable: true,
+    clearInterval: 1000 * 60 * 10,
+    tablename: 'sessions',
+    sidfieldname: 'sid'
+  }),
+  cookie: {
+    maxAge: 1000 * 60 * 10, // after x milliseconds, cookie expires
+    secure: false, // true in production
+    httpOnly: true
+    // sameSite: 'none' // for using third party cookies in production
+  }
 }
 
 const server = express();
 
+server.use(session(sessionConfig))
 server.use(helmet());
 server.use(express.json());
 server.use(cors());
 server.use(logger)
-server.use(session(sessionConfig))
 
 server.use('/api/auth', authRouter)
 server.use('/api/users', userRouter)

@@ -7,6 +7,7 @@ const {
   checkUsernameExists,
   checkPasswordLength
 } = require('./auth-middleware')
+const bcrypt = require('bcryptjs')
 
 /**
   1 [POST] /api/auth/register { "username": "sue", "password": "1234" }
@@ -31,9 +32,12 @@ const {
   }
  */
 router.post('/register', checkPasswordLength, checkUsernameFree, (req, res, next) => {
-  User.add(req.body)
+  const { username, password } = req.body
+  const hash = bcrypt.hashSync(password, 8) // 2 ^ 8 rounds of hashing, higher number = more secure but slower
+
+  User.add({ username, password: hash })
     .then(registered => {
-      res.json(registered)
+      res.status(201).json(registered)
     })
     .catch(next)
 })
