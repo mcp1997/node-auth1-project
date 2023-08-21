@@ -45,6 +45,7 @@ function checkUsernameExists(req, res, next) {
       if(!array.length) {
         next({ status: 401, message: 'Invalid credentials' })
       } else {
+        req.user = array[0]
         next()
       }
     })
